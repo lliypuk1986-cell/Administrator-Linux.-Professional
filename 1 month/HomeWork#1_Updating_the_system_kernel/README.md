@@ -32,7 +32,7 @@
 ssh -p 222 user@127.0.0.1
 ```
 
-2. Обновите ядро ОС на новейшую стабильную версию из mainline-репозитория.
+### 2. Обновите ядро ОС на новейшую стабильную версию из mainline-репозитория.
 - Осуществлена проверка текущей версии ядра:
 ```
 root@user:/home/user# uname -r
@@ -91,4 +91,6 @@ lrwxrwxrwx  1 root root       25 Apr  1 18:20 vmlinuz.old -> vmlinuz-6.8.0-107-g
 root@user:/home/user# uname -r
 7.0.0-070000rc6-generic
 ```
-![alt text](image-2.png)
+<p align="center">
+  <img src="image-2.png" alt="Итоговая конфигурация">
+</p>
