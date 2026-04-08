@@ -2,18 +2,20 @@
 
 ## Задание
 
-1. Добавьте в виртуальную машину несколько дисков
-2. Соберите RAID-0/1/5/10 на выбор
-3. Сломайте и почините RAID
-4. Создайте GPT таблицу, пять разделов и смонтируйте их в системе.
+1. Добавьте в виртуальную машину несколько дисков  
+2. Соберите RAID-0/1/5/10 на выбор  
+3. Сломайте и почините RAID  
+4. Создайте GPT таблицу, пять разделов и смонтируйте их в системе  
 
 ---
 
-## Выполнение задания
+## Выполнение
 
-### 1. Добавьте в виртуальную машину несколько дисков
-Проверяем диски в ВМ:
-```
+### 1. Добавление дисков
+
+Проверяем исходное состояние:
+
+```bash
 root@user:/home/user# lsblk
 NAME                      MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
 sda                         8:0    0   10G  0 disk
@@ -24,10 +26,15 @@ sda                         8:0    0   10G  0 disk
 sr0                        11:0    1 1024M  0 rom
 ```
 
-Добавляем в ВМ 5 дисков
-![alt text](image.png)
-Запускаем ВМ, проверяем диски:
-```
+Добавляем 5 дисков в ВМ:
+
+<div align="center">
+  <img src="image.png" alt="Добавление дисков">
+</div>
+
+Запускаем ВМ и проверяем:
+
+```bash
 root@user:/home/user# lsblk
 NAME                      MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
 sda                         8:0    0   10G  0 disk
@@ -43,29 +50,37 @@ sdf                         8:80   0    1G  0 disk
 sr0                        11:0    1 1024M  0 rom
 ```
 
-### 2. Соберите RAID-0/1/5/10 на выбор
+### 2. Сборка RAID 5
 
-Собираем 5 Raid на 4 дисках sd{b,c,d,e}:
+Собираем RAID 5 на четырёх дисках `sd{b,c,d,e}`:
+
+<details>
+<summary>Команда сборки RAID</summary>
+
+```bash
+sudo mdadm --create --verbose /dev/md0 -l 5 -n 4 /dev/sd{b,c,d,e}
 ```
+</details>
+
+```bash
 root@user:/home/user# sudo mdadm --create --verbose /dev/md0 -l 5 -n 4 /dev/sd{b,c,d,e}
-mdadm: layout defaults to left-symmetric
 mdadm: layout defaults to left-symmetric
 mdadm: chunk size defaults to 512K
 mdadm: size set to 1046528K
 mdadm: Defaulting to version 1.2 metadata
 mdadm: array /dev/md0 started.
 ```
-Проверим, что RAID собрался корректно:
-```
 
+Проверяем результат:
+
+```bash
 root@user:/home/user# cat /proc/mdstat
 Personalities : [raid0] [raid1] [raid4] [raid5] [raid6] [raid10] [linear]
 md0 : active raid5 sde[4] sdd[2] sdc[1] sdb[0]
       3139584 blocks super 1.2 level 5, 512k chunk, algorithm 2 [4/4] [UUUU]
 ```
-Получили итоговый вариант с дисками:
-```
 
+```bash
 root@user:/home/user# lsblk
 NAME                      MAJ:MIN RM  SIZE RO TYPE  MOUNTPOINTS
 sda                         8:0    0   10G  0 disk
@@ -85,28 +100,28 @@ sdf                         8:80   0    1G  0 disk
 sr0                        11:0    1 1024M  0 rom
 ```
 
-### 3. Сломайте и почините RAID
+### 3. Поломка и восстановление RAID
 
-“Зафейлим” одно из блочное устройство sde:
-```
+Помечаем диск `sde` как сбойный:
+
+```bash
 root@user:/home/user# mdadm /dev/md0 --fail /dev/sde
 mdadm: set /dev/sde faulty in /dev/md0
 ```
-Проверяем
-```
+
+Проверяем состояние:
+
+```bash
 root@user:/home/user# cat /proc/mdstat
 Personalities : [raid0] [raid1] [raid4] [raid5] [raid6] [raid10] [linear]
 md0 : active raid5 sde[4](F) sdd[2] sdc[1] sdb[0]
       3139584 blocks super 1.2 level 5, 512k chunk, algorithm 2 [4/3] [UUU_]
 ```
 
-По итогу видим следующее:
-[4/3] — ожидается 4 диска, активно 3
-[UUU_] — первые три диска Up, четвёртый — неактивен
-(F) — faulty (сбойный)
+<details>
+<summary>Детальная информация о RAID</summary>
 
-Более детально:
-```
+```bash
 root@user:/home/user# mdadm --detail /dev/md0
 /dev/md0:
            Version : 1.2
@@ -140,26 +155,32 @@ Consistency Policy : resync
        2       8       48        2      active sync   /dev/sdd
        -       0        0        3      removed
 ```
+</details>
 
-Удалим “сломанный” диск из массива:
-```
+Удаляем сбойный диск:
+
+```bash
 root@user:/home/user# mdadm /dev/md0 --remove /dev/sde
 mdadm: hot removed /dev/sde from /dev/md0
 ```
 
-Далее добавляем новый диск sdf в массив (5 диск в ВМ, который мы не использовали для создания Raid-массива)
-```
+Добавляем новый диск `sdf`:
+
+```bash
 root@user:/home/user# mdadm /dev/md0 --add /dev/sdf
 mdadm: added /dev/sdf
 ```
-Проверяем результат:
-```
+
+Проверяем восстановление:
+
+```bash
 root@user:/home/user# cat /proc/mdstat
 Personalities : [raid0] [raid1] [raid4] [raid5] [raid6] [raid10] [linear]
 md0 : active raid5 sdf[4] sdd[2] sdc[1] sdb[0]
       3139584 blocks super 1.2 level 5, 512k chunk, algorithm 2 [4/4] [UUUU]
 ```
-```
+
+```bash
 root@user:/home/user# lsblk
 NAME                      MAJ:MIN RM  SIZE RO TYPE  MOUNTPOINTS
 sda                         8:0    0   10G  0 disk
@@ -179,22 +200,29 @@ sdf                         8:80   0    1G  0 disk
 sr0                        11:0    1 1024M  0 rom
 ```
 
-### 4. Создайте GPT таблицу, пять разделов и смонтируйте их в системе.
+### 4. Создание GPT разделов и монтирование
 
+Создаём GPT таблицу на RAID-массиве:
 
-Создаем новую таблицу разделов GPT на RAID-массиве /dev/md0
-```
+```bash
 root@user:/home/user# parted -s /dev/md0 mklabel gpt
 ```
-Разбиваем RAID-массив /dev/md0 на 5 логических разделов, каждый из которых займёт указанный процент от общего объёма массива
-Создаем партиции
- parted /dev/md0 mkpart primary ext4 0% 20%
- parted /dev/md0 mkpart primary ext4 20% 40%
- parted /dev/md0 mkpart primary ext4 40% 60%
- parted /dev/md0 mkpart primary ext4 60% 80%
- parted /dev/md0 mkpart primary ext4 80% 100%
 
+Создаём 5 разделов:
+
+<details>
+<summary>Команды создания разделов</summary>
+
+```bash
+parted /dev/md0 mkpart primary ext4 0% 20%
+parted /dev/md0 mkpart primary ext4 20% 40%
+parted /dev/md0 mkpart primary ext4 40% 60%
+parted /dev/md0 mkpart primary ext4 60% 80%
+parted /dev/md0 mkpart primary ext4 80% 100%
 ```
+</details>
+
+```bash
 root@user:/home/user# parted /dev/md0 mkpart primary ext4 0% 20%
 Information: You may need to update /etc/fstab.
 root@user:/home/user# parted /dev/md0 mkpart primary ext4 20% 40%
@@ -207,8 +235,9 @@ root@user:/home/user# parted /dev/md0 mkpart primary ext4 80% 100%
 Information: You may need to update /etc/fstab.
 ```
 
-Проверяем результат:
-```
+Проверяем созданные разделы:
+
+```bash
 root@user:/home/user# lsblk /dev/md0
 NAME    MAJ:MIN RM   SIZE RO TYPE  MOUNTPOINTS
 md0       9:0    0     3G  0 raid5
@@ -219,18 +248,30 @@ md0       9:0    0     3G  0 raid5
 └─md0p5 259:4    0   612M  0 part
 ```
 
-Создаем на этих партициях афйловую систему:
+Создаём файловые системы:
+
+<details>
+<summary>Создание ФС на всех разделах</summary>
+
+```bash
+for i in $(seq 1 5); do mkfs.ext4 -F /dev/md0p$i; done
 ```
-root@user:/home/user# for i in $(seq 1 5); do mkfs.ext4 -F /dev/md0p$i; done
+</details>
+
+Монтируем разделы:
+
+<details>
+<summary>Монтирование разделов</summary>
+
+```bash
+mkdir -p /raid/part{1,2,3,4,5}
+for i in $(seq 1 5); do mount /dev/md0p$i /raid/part$i; done
 ```
-создаём каталоги и монтируем в них каждый из 5 разделов RAID-массива
-```
-root@user:/home/user# mkdir -p /raid/part{1,2,3,4,5}
-root@user:/home/user# for i in $(seq 1 5); do mount /dev/md0p$i /raid/part$i; done
-```
+</details>
 
 Проверяем результат:
-```
+
+```bash
 root@user:/home/user# df -h | grep md0
 /dev/md0p1                         586M   24K  543M   1% /raid/part1
 /dev/md0p2                         587M   24K  544M   1% /raid/part2
@@ -239,6 +280,12 @@ root@user:/home/user# df -h | grep md0
 /dev/md0p5                         586M   24K  543M   1% /raid/part5
 ```
 
-Задание выполнено.
+---
 
-![alt text](image-1.png)
+## Результат
+
+<div align="center">
+  <img src="image-1.png" alt="Результат выполнения">
+</div>
+
+**Задание выполнено.** ✅
