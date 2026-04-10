@@ -324,6 +324,8 @@ lsblk
 
 <details> 
 <summary>Вывод до остановки RAID</summary>
+
+```bash
 NAME                      MAJ:MIN RM   SIZE RO TYPE  MOUNTPOINTS
 sda                         8:0    0    10G  0 disk
 ├─sda1                      8:1    0     1M  0 part
@@ -345,6 +347,7 @@ sde                         8:64   0     1G  0 disk
 sdf                         8:80   0     1G  0 disk
 └─md127                     9:127  0     3G  0 raid5
 sr0                        11:0    1  1024M  0 rom
+```
 </details>
 
 Останавливаем работу RAID массива:
@@ -363,9 +366,13 @@ root@user:/home/user# mdadm --zero-superblock /dev/sdf
 
 Смотрим, что RAID массива больше нет:
 root@user:/home/user# cat /proc/mdstat
-<details> <summary>Результат</summary>
+<details> 
+<summary>Результат</summary>
+
+```bash
 Personalities : [raid0] [raid1] [raid4] [raid5] [raid6] [raid10] [linear]
 unused devices: <none>
+```
 </details>
 
 Диски в исходном состоянии
@@ -373,7 +380,10 @@ unused devices: <none>
 root@user:/home/user# lsblk
 ```
 
-<details> <summary>Диски в исходном состоянии</summary>
+<details> 
+<summary>Диски в исходном состоянии</summary>
+
+```bash
 NAME                      MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
 sda                         8:0    0   10G  0 disk
 ├─sda1                      8:1    0    1M  0 part
@@ -386,6 +396,7 @@ sdd                         8:48   0    1G  0 disk
 sde                         8:64   0    1G  0 disk
 sdf                         8:80   0    1G  0 disk
 sr0                        11:0    1 1024M  0 rom
+```
 </details>
 
 Удаляем созданные директории:
@@ -398,26 +409,38 @@ apt update && apt install smartmontools -y
 ```
 
 Проверяем S.M.A.R.T. статус всех дисков:
+
+```bash
 smartctl -H /dev/sdb
 smartctl -H /dev/sdc
 smartctl -H /dev/sdd
 smartctl -H /dev/sde
 smartctl -H /dev/sdf
+```
 
 <details> 
 <summary>Результат проверки</summary>
+
+```bash
 smartctl 7.4 2023-08-01 r5530 [x86_64-linux-7.0.0-070000rc6-generic] (local build)
 Copyright (C) 2002-23, Bruce Allen, Christian Franke, www.smartmontools.org
 SMART support is: Unavailable - device lacks SMART capability.
+```
 </details>
 
 Примечание: Виртуальные диски в VMware/VirtualBox по умолчанию не поддерживают S.M.A.R.T.
 Вывод: Пропускаем этот пункт и продолжаем настройку RAID. ✅
 
 Создаём RAID-6 массив из 5 дисков (4 активных + 1 запасной):
+
+```bash
 root@user:/home/user# mdadm --create --verbose /dev/md0 --level=6 --raid-devices=4 --spare-devices=1 /dev/sdb /dev/sdc /dev/sdd /dev/sde /dev/sdf
+```
+
 <details> 
 <summary>Процесс создания</summary>
+
+```bash
 mdadm: layout defaults to left-symmetric
 mdadm: layout defaults to left-symmetric
 mdadm: chunk size defaults to 512K
@@ -428,6 +451,7 @@ Continue creating array? yes
 Continue creating array? (y/n) y
 mdadm: Defaulting to version 1.2 metadata
 mdadm: array /dev/md0 started.
+```
 </details>
 
 
@@ -437,11 +461,14 @@ root@user:/home/user# cat /proc/mdstat
 ```
 <details> 
 <summary>Вывод</summary>
+
+```bash
 Personalities : [raid0] [raid1] [raid4] [raid5] [raid6] [raid10] [linear]
 md0 : active raid6 sdf[4](S) sde[3] sdd[2] sdc[1] sdb[0]
       2093056 blocks super 1.2 level 6, 512k chunk, algorithm 2 [4/4] [UUUU]
 
 unused devices: <none>
+```
 </details>
 
 ```
@@ -449,6 +476,8 @@ root@user:/home/user# mdadm --detail /dev/md0
 ```
 <details> 
 <summary>Детальная информация</summary>
+
+```bash
 /dev/md0:
            Version : 1.2
      Creation Time : Fri Apr 10 05:59:42 2026
@@ -482,7 +511,7 @@ Consistency Policy : resync
        3       8       64        3      active sync   /dev/sde
 
        4       8       80        -      spare   /dev/sdf
-
+```
 </details>
 
 Запускаем watch для отслеживания процесса синхронизации:
