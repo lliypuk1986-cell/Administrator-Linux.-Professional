@@ -309,7 +309,7 @@ umount /raid/part{1,2,3,4,5}
 ```
 <details> 
 <summary>Результат выполнения</summary>
-```
+```bash
 umount: /raid/part1: not mounted.
 umount: /raid/part2: not mounted.
 umount: /raid/part3: not mounted.
