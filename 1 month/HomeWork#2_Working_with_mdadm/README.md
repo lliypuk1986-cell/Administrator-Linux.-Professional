@@ -289,3 +289,243 @@ root@user:/home/user# df -h | grep md0
 </div>
 
 **Задание выполнено.** ✅
+
+### Дополнительное задание: RAID-6 с мониторингом и S.M.A.R.T.
+
+## Цель работы
+
+1. Настроить RAID-6 на 5 дисках (4 активных + 1 запасной)  
+2. Имитировать отказ диска и показать процесс восстановления в реальном времени через `watch`  
+3. Выполнить проверку S.M.A.R.T. перед сборкой RAID  
+
+---
+
+## 1. Очистка предыдущей конфигурации RAID
+
+### Размонтирование разделов
+
+```bash
+umount /raid/part{1,2,3,4,5}
+
+<details> <summary>Результат выполнения</summary>
+umount: /raid/part1: not mounted.
+umount: /raid/part2: not mounted.
+umount: /raid/part3: not mounted.
+umount: /raid/part4: not mounted.
+umount: /raid/part5: not mounted.
+
+</details>
+Проверка текущего состояния дисков
+```bash
+lsblk
+
+<details> <summary>Вывод до остановки RAID</summary>
+NAME                      MAJ:MIN RM   SIZE RO TYPE  MOUNTPOINTS
+sda                         8:0    0    10G  0 disk
+├─sda1                      8:1    0     1M  0 part
+├─sda2                      8:2    0   1.8G  0 part  /boot
+└─sda3                      8:3    0   8.2G  0 part
+  └─ubuntu--vg-ubuntu--lv 252:0    0   8.2G  0 lvm   /
+sdb                         8:16   0     1G  0 disk
+└─md127                     9:127  0     3G  0 raid5
+  ├─md127p1               259:0    0   612M  0 part
+  ├─md127p2               259:1    0 613.5M  0 part
+  ├─md127p3               259:2    0   612M  0 part
+  ├─md127p4               259:3    0 613.5M  0 part
+  └─md127p5               259:4    0   612M  0 part
+sdc                         8:32   0     1G  0 disk
+└─md127                     9:127  0     3G  0 raid5
+sdd                         8:48   0     1G  0 disk
+└─md127                     9:127  0     3G  0 raid5
+sde                         8:64   0     1G  0 disk
+sdf                         8:80   0     1G  0 disk
+└─md127                     9:127  0     3G  0 raid5
+sr0                        11:0    1  1024M  0 rom
+</details>
+
+Останавливаем работу RAID массива:
+```
+root@user:/home/user# mdadm --stop /dev/md127
+mdadm: stopped /dev/md127
+```
+
+Удаляем суперблоки со всех дисков, которые были в RAID:
+```
+root@user:/home/user# mdadm --zero-superblock /dev/sdb
+root@user:/home/user# mdadm --zero-superblock /dev/sdc
+root@user:/home/user# mdadm --zero-superblock /dev/sdd
+root@user:/home/user# mdadm --zero-superblock /dev/sdf
+```
+
+Смотрим, что RAID массива больше нет:
+root@user:/home/user# cat /proc/mdstat
+<details> <summary>Результат</summary>
+Personalities : [raid0] [raid1] [raid4] [raid5] [raid6] [raid10] [linear]
+unused devices: <none>
+</details>
+
+Диски в исходном состоянии
+```
+root@user:/home/user# lsblk
+```
+
+<details> <summary>Диски в исходном состоянии</summary>
+NAME                      MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
+sda                         8:0    0   10G  0 disk
+├─sda1                      8:1    0    1M  0 part
+├─sda2                      8:2    0  1.8G  0 part /boot
+└─sda3                      8:3    0  8.2G  0 part
+  └─ubuntu--vg-ubuntu--lv 252:0    0  8.2G  0 lvm  /
+sdb                         8:16   0    1G  0 disk
+sdc                         8:32   0    1G  0 disk
+sdd                         8:48   0    1G  0 disk
+sde                         8:64   0    1G  0 disk
+sdf                         8:80   0    1G  0 disk
+sr0                        11:0    1 1024M  0 rom
+</details>
+
+Удаляем созданные директории:
+```
+root@user:/home/user# rm -rf /raid
+```
+Устанавливаем smartmontools (если не установлен):
+```
+apt update && apt install smartmontools -y
+```
+
+Проверяем S.M.A.R.T. статус всех дисков:
+smartctl -H /dev/sdb
+smartctl -H /dev/sdc
+smartctl -H /dev/sdd
+smartctl -H /dev/sde
+smartctl -H /dev/sdf
+
+<details> <summary>Результат проверки</summary>
+smartctl 7.4 2023-08-01 r5530 [x86_64-linux-7.0.0-070000rc6-generic] (local build)
+Copyright (C) 2002-23, Bruce Allen, Christian Franke, www.smartmontools.org
+SMART support is: Unavailable - device lacks SMART capability.
+</details>
+
+Примечание: Виртуальные диски в VMware/VirtualBox по умолчанию не поддерживают S.M.A.R.T.
+Вывод: Пропускаем этот пункт и продолжаем настройку RAID. ✅
+
+Создаём RAID-6 массив из 5 дисков (4 активных + 1 запасной):
+root@user:/home/user# mdadm --create --verbose /dev/md0 --level=6 --raid-devices=4 --spare-devices=1 /dev/sdb /dev/sdc /dev/sdd /dev/sde /dev/sdf
+<details> <summary>Процесс создания</summary>
+mdadm: layout defaults to left-symmetric
+mdadm: layout defaults to left-symmetric
+mdadm: chunk size defaults to 512K
+mdadm: /dev/sde appears to be part of a raid array:
+       level=raid5 devices=4 ctime=Wed Apr  8 05:48:35 2026
+mdadm: size set to 1046528K
+Continue creating array? yes
+Continue creating array? (y/n) y
+mdadm: Defaulting to version 1.2 metadata
+mdadm: array /dev/md0 started.
+</details>
+
+
+Проверяем состояние массива:
+```
+root@user:/home/user# cat /proc/mdstat
+```
+<details> <summary>Вывод</summary>
+Personalities : [raid0] [raid1] [raid4] [raid5] [raid6] [raid10] [linear]
+md0 : active raid6 sdf[4](S) sde[3] sdd[2] sdc[1] sdb[0]
+      2093056 blocks super 1.2 level 6, 512k chunk, algorithm 2 [4/4] [UUUU]
+
+unused devices: <none>
+</details>
+
+```
+root@user:/home/user# mdadm --detail /dev/md0
+```
+<details> <summary>Детальная информация</summary>
+/dev/md0:
+           Version : 1.2
+     Creation Time : Fri Apr 10 05:59:42 2026
+        Raid Level : raid6
+        Array Size : 2093056 (2044.00 MiB 2143.29 MB)
+     Used Dev Size : 1046528 (1022.00 MiB 1071.64 MB)
+      Raid Devices : 4
+     Total Devices : 5
+       Persistence : Superblock is persistent
+
+       Update Time : Fri Apr 10 05:59:51 2026
+             State : clean
+    Active Devices : 4
+   Working Devices : 5
+    Failed Devices : 0
+     Spare Devices : 1
+
+            Layout : left-symmetric
+        Chunk Size : 512K
+
+Consistency Policy : resync
+
+              Name : user:0  (local to host user)
+              UUID : 798e91b3:14e4a021:a2bcd2b4:68f987f0
+            Events : 17
+
+    Number   Major   Minor   RaidDevice State
+       0       8       16        0      active sync   /dev/sdb
+       1       8       32        1      active sync   /dev/sdc
+       2       8       48        2      active sync   /dev/sdd
+       3       8       64        3      active sync   /dev/sde
+
+       4       8       80        -      spare   /dev/sdf
+
+</details>
+
+Запускаем watch для отслеживания процесса синхронизации:
+```
+watch -n 1 'cat /proc/mdstat | grep -A 5 md0'
+```
+![alt text](image-2.png)
+
+Имитируем отказ диска (выдёргиваем один диск)
+```
+root@user:/home/user# mdadm /dev/md0 --fail /dev/sde
+mdadm: set /dev/sde faulty in /dev/md0
+```
+
+тем временем в параллельно открытом окне watch  можно наблюдать за rebuild'ом.
+
+Восстанавливаем RAID
+Удаляем сбойный диск:
+```
+user:/home/user# mdadm /dev/md0 --remove /dev/sde
+mdadm: hot removed /dev/sde from /dev/md0
+```
+Добавляем запасной диск:
+```
+user:/home/user# mdadm /dev/md0 --add /dev/sde
+mdadm: added /dev/sde
+```
+Можно наблюдать за процессом recovery через watch:
+watch -n 1 'cat /proc/mdstat | grep -A 5 md0'
+
+Проверяем  RAID
+```
+user:/home/user# lsblk | grep -A 6 md0
+└─md0                       9:0    0    2G  0 raid6
+sdc                         8:32   0    1G  0 disk
+└─md0                       9:0    0    2G  0 raid6
+sdd                         8:48   0    1G  0 disk
+└─md0                       9:0    0    2G  0 raid6
+sde                         8:64   0    1G  0 disk
+└─md0                       9:0    0    2G  0 raid6
+sdf                         8:80   0    1G  0 disk
+└─md0                       9:0    0    2G  0 raid6
+sr0                        11:0    1 1024M  0 rom
+```
+
+✅ RAID-6 массив из 5 дисков (4 активных + 1 горячий запасной) успешно:
+
+- Собран
+
+- Протестирован на отказоустойчивость
+
+- Восстановлен после имитации отказа диска
+
+- Процесс recovery отслежен в реальном времени через watch
