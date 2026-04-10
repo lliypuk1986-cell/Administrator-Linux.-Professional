@@ -319,9 +319,10 @@ umount: /raid/part5: not mounted.
 ```
 </details>
 Проверка текущего состояния дисков
+
 ```bash
 lsblk
-
+```
 <details> 
 <summary>Вывод до остановки RAID</summary>
 
