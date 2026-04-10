@@ -307,7 +307,8 @@ root@user:/home/user# df -h | grep md0
 ```bash
 umount /raid/part{1,2,3,4,5}
 
-<details> <summary>Результат выполнения</summary>
+<details> 
+<summary>Результат выполнения</summary>
 umount: /raid/part1: not mounted.
 umount: /raid/part2: not mounted.
 umount: /raid/part3: not mounted.
@@ -319,7 +320,8 @@ umount: /raid/part5: not mounted.
 ```bash
 lsblk
 
-<details> <summary>Вывод до остановки RAID</summary>
+<details> 
+<summary>Вывод до остановки RAID</summary>
 NAME                      MAJ:MIN RM   SIZE RO TYPE  MOUNTPOINTS
 sda                         8:0    0    10G  0 disk
 ├─sda1                      8:1    0     1M  0 part
@@ -400,7 +402,8 @@ smartctl -H /dev/sdd
 smartctl -H /dev/sde
 smartctl -H /dev/sdf
 
-<details> <summary>Результат проверки</summary>
+<details> 
+<summary>Результат проверки</summary>
 smartctl 7.4 2023-08-01 r5530 [x86_64-linux-7.0.0-070000rc6-generic] (local build)
 Copyright (C) 2002-23, Bruce Allen, Christian Franke, www.smartmontools.org
 SMART support is: Unavailable - device lacks SMART capability.
@@ -411,7 +414,8 @@ SMART support is: Unavailable - device lacks SMART capability.
 
 Создаём RAID-6 массив из 5 дисков (4 активных + 1 запасной):
 root@user:/home/user# mdadm --create --verbose /dev/md0 --level=6 --raid-devices=4 --spare-devices=1 /dev/sdb /dev/sdc /dev/sdd /dev/sde /dev/sdf
-<details> <summary>Процесс создания</summary>
+<details> 
+<summary>Процесс создания</summary>
 mdadm: layout defaults to left-symmetric
 mdadm: layout defaults to left-symmetric
 mdadm: chunk size defaults to 512K
@@ -429,7 +433,8 @@ mdadm: array /dev/md0 started.
 ```
 root@user:/home/user# cat /proc/mdstat
 ```
-<details> <summary>Вывод</summary>
+<details> 
+<summary>Вывод</summary>
 Personalities : [raid0] [raid1] [raid4] [raid5] [raid6] [raid10] [linear]
 md0 : active raid6 sdf[4](S) sde[3] sdd[2] sdc[1] sdb[0]
       2093056 blocks super 1.2 level 6, 512k chunk, algorithm 2 [4/4] [UUUU]
@@ -440,7 +445,8 @@ unused devices: <none>
 ```
 root@user:/home/user# mdadm --detail /dev/md0
 ```
-<details> <summary>Детальная информация</summary>
+<details> 
+<summary>Детальная информация</summary>
 /dev/md0:
            Version : 1.2
      Creation Time : Fri Apr 10 05:59:42 2026
