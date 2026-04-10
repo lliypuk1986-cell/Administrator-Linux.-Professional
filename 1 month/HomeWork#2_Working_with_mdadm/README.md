@@ -306,7 +306,7 @@ root@user:/home/user# df -h | grep md0
 
 ```bash
 umount /raid/part{1,2,3,4,5}
-
+```
 <details> 
 <summary>Результат выполнения</summary>
 umount: /raid/part1: not mounted.
