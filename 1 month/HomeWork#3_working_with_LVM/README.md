@@ -50,6 +50,7 @@ root@user:/home/user# lvmdiskscan
 
 Подготовим временный том для / раздела:
 
+```bash
 root@user:/home/user# pvcreate /dev/sdb
   Physical volume "/dev/sdb" successfully created.
 
@@ -58,9 +59,10 @@ root@user:/home/user# vgcreate vg_root /dev/sdb
 
 root@user:/home/user# lvcreate -n lv_root -l +100%FREE /dev/vg_root
   Logical volume "lv_root" created.
+```
 
-Создадим на нем файловую систему и смонтируем его, чтобы перенести туда данные:
-
+Создадим на нем файловую систему и смонтируем, чтобы перенести данные:
+```bash
 root@user:/home/user# mkfs.ext4 /dev/vg_root/lv_root
 mke2fs 1.47.0 (5-Feb-2023)
 Creating filesystem with 2620416 4k blocks and 655360 inodes
@@ -74,9 +76,10 @@ Creating journal (16384 blocks): done
 Writing superblocks and filesystem accounting information: done 
 
 root@user:/home/user# mount /dev/vg_root/lv_root /mnt
+```
 
 Копируем все данные с / раздела в /mnt:
-
+```bash
 root@user:/home/user# rsync -avxHAX --progress / /mnt/
 …
 
@@ -87,11 +90,11 @@ total size is 4,773,506,378  speedup is 1.00
 root@user:/home/user# ls /mnt
 bin                boot   dev  home  lib64              lost+found  mnt  proc  run   sbin.usr-is-merged  srv       sys  usr
 bin.usr-is-merged  cdrom  etc  lib   lib.usr-is-merged  media       opt  root  sbin  snap                swap.img  tmp  var
+```
 
-
-Затем сконфигурируем grub для того, чтобы при старте перейти в новый /.
+Конфигурируем grub для того, чтобы при старте перейти в новый /.
 Сымитируем текущий root, сделаем в него chroot и обновим grub:
-
+```bash
 root@user:/home/user# for i in /proc/ /sys/ /dev/ /run/ /boot/; \
  do mount --bind $i /mnt/$i; done
 
@@ -109,18 +112,20 @@ Systems on them will not be added to the GRUB boot configuration.
 Check GRUB_DISABLE_OS_PROBER documentation entry.
 Adding boot menu entry for UEFI Firmware Settings ...
 done
-
+```
 
 Обновим образ initrd. 
+```bash
 root@user:/# update-initramfs -u
 update-initramfs: Generating /boot/initrd.img-7.0.0-070000rc6-generic
-
+```
 
 Презагружаемся (предварительно выйдя из chroot), чтобы работать с новым разделом.
+```bash
 root@user:/# reboot -h now
-
+```
 Проверяем что все работы выполнены корректно после перезагрузки:
-
+```bash
 root@user:/home/user# lsblk
 NAME                      MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
 sda                         8:0    0   10G  0 disk 
@@ -134,10 +139,10 @@ sdc                         8:32   0    2G  0 disk
 sdd                         8:48   0    1G  0 disk 
 sde                         8:64   0    1G  0 disk 
 sr0                        11:0    1 1024M  0 rom  
-
+```
 
 Теперь нам нужно изменить размер старой VG и вернуть на него рут. Для этого удаляем старый LV и создаём новый на 8G:
-
+```bash
 root@user:/home/user# lvremove /dev/ubuntu-vg/ubuntu-lv
 Do you really want to remove and DISCARD active logical volume ubuntu-vg/ubuntu-lv? [y/n]: y
   Logical volume "ubuntu-lv" successfully removed.
@@ -146,9 +151,9 @@ root@user:/home/user# lvcreate -n ubuntu-vg/ubuntu-lv -L 8G /dev/ubuntu-vg
 WARNING: ext4 signature detected on /dev/ubuntu-vg/ubuntu-lv at offset 1080. Wipe it? [y/n]: y
   Wiping ext4 signature on /dev/ubuntu-vg/ubuntu-lv.
   Logical volume "ubuntu-lv" created.
-
-Проделываем на нем те же операции, что и в первый раз:
-
+```
+Проделываем на нем те же операции, что и выше:
+```bash
 root@user:/home/user# mkfs.ext4 /dev/ubuntu-vg/ubuntu-lv
 mke2fs 1.47.0 (5-Feb-2023)
 Creating filesystem with 2097152 4k blocks and 524288 inodes
@@ -167,9 +172,9 @@ root@user:/home/user# mount /dev/ubuntu-vg/ubuntu-lv /mnt
 root@user:/home/user# rsync -avxHAX --progress / /mnt/
 sent 4,795,736,673 bytes  received 2,287,870 bytes  21,858,881.74 bytes/sec
 total size is 4,790,480,055  speedup is 1.00
-
-Так же как в первый раз cконфигурируем grub.
-
+```
+Сконфигурируем grub:
+```bash
 root@user:/home/user# for i in /proc/ /sys/ /dev/ /run/ /boot/; \
  do mount --bind $i /mnt/$i; done
 root@user:/home/user# chroot /mnt/
@@ -189,13 +194,13 @@ done
 root@user:/# update-initramfs -u
 update-initramfs: Generating /boot/initrd.img-7.0.0-070000rc6-generic
 W: Couldn't identify type of root file system for fsck hook
-
+```
 
 ### 2. Выделить том под /var - сделать в mirror.
-Пока не перезагружаемся и не выходим из под chroot - мы можем заодно перенести /var.
+Не перезагружаемся и не выходим из под chroot - переносим /var.
 Выделить том под /var в зеркало
 На свободных дисках создаем зеркало:
-
+```bash
 root@user:/# pvcreate /dev/sdc /dev/sdd
   Physical volume "/dev/sdc" successfully created.
   Physical volume "/dev/sdd" successfully created.
@@ -206,9 +211,9 @@ root@user:/# vgcreate vg_var /dev/sdc /dev/sdd
 root@user:/# lvcreate -L 950M -m1 -n lv_var vg_var
   Rounding up size to full physical extent 952.00 MiB
   Logical volume "lv_var" created.
-
+```
 Создаем на нем ФС и перемещаем туда /var:
-
+```bash
 root@user:/# mkfs.ext4 /dev/vg_var/lv_var
 mke2fs 1.47.0 (5-Feb-2023)
 Creating filesystem with 243712 4k blocks and 60928 inodes
@@ -223,24 +228,25 @@ Writing superblocks and filesystem accounting information: done
 
 root@user:/# mount /dev/vg_var/lv_var /mnt
 root@user:/# cp -aR /var/* /mnt/
-
-На всякий случай сохраняем содержимое старого var (или же можно его просто удалить):
-
+```
+Сохраняем содержимое старого var (или можно его просто удалить):
+```bash
 root@user:/# mkdir /tmp/oldvar && mv /var/* /tmp/oldvar
-
-Ну и монтируем новый var в каталог /var:
-
+```
+Монтируем новый var в каталог /var:
+```bash
 root@user:/# umount /mnt
 root@user:/# mount /dev/vg_var/lv_var /var
-
+```
 Правим fstab для автоматического монтирования /var:
-
+```bash
 [root@lvm boot]# echo "`blkid | grep var: | awk '{print $2}'` \
  /var ext4 defaults 0 0" >> /etc/fstab
-
+```
 
 Презагружаемся (предварительно выйдя из chroot) в новый (уменьшенный root) и удалять
 временную Volume Group:
+```bash
 root@user:/home/user# reboot
 
 root@user:/home/user# lvremove /dev/vg_root/lv_root
@@ -252,8 +258,9 @@ root@user:/home/user# vgremove /dev/vg_root
 
 root@user:/home/user# pvremove /dev/sdb
   Labels on physical volume "/dev/sdb" successfully wiped.
-
+```
 Проверяем структуру дисков:
+```bash
 root@user:/home/user# lsblk
 NAME                      MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
 sda                         8:0    0   10G  0 disk 
@@ -273,17 +280,16 @@ sdd                         8:48   0    1G  0 disk
 └─vg_var-lv_var_rimage_1  252:4    0  952M  0 lvm  
   └─vg_var-lv_var         252:5    0  952M  0 lvm  /var
 sde                         8:64   0    1G  0 disk 
-
+```
 
 ### 3. Выделить том под /home.
 Выделяем том под /home по тому же принципу что делали для /var:
-
+```bash
 root@user:/home/user# pvcreate /dev/sde
   Physical volume "/dev/sde" successfully created.
 
 root@user:/home/user# vgcreate vg_home /dev/sde
   Volume group "vg_home" successfully created
-
 
 root@user:/home/user# lvcreate -n LogVol_Home -L 1020m vg_home
   Logical volume "LogVol_Home" created.
@@ -294,15 +300,16 @@ root@user:/home/user# cp -aR /home/* /mnt/
 root@user:/home/user# rm -rf /home/*
 root@user:/home/user# umount /mnt
 root@user:/home/user# mount /dev/vg_home/LogVol_Home /home/
-
+```
 
 ### 4. Прописать монтирование в fstab. 
 Правим fstab для автоматического монтирования /home:
-
+```bash
 root@user:/home/user# echo "`blkid | grep Home | awk '{print $2}'` \
  /home xfs defaults 0 0" >> /etc/fstab
-
+```
 Проверяем разделы:
+```bash
 root@user:/home/user# lsblk
 NAME                      MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
 sda                         8:0    0   10G  0 disk 
@@ -323,16 +330,16 @@ sdd                         8:48   0    1G  0 disk
   └─vg_var-lv_var         252:5    0  952M  0 lvm  /var
 sde                         8:64   0    1G  0 disk 
 └─vg_home-LogVol_Home     252:0    0 1020M  0 lvm  /home
-
+```
 
 ### 5. Работа со снапшотами
 Генерируем файлы в /home/:
-
+```bash
 root@user:/home/user# touch /home/file{1..20}
-
+```
 
 Увеличиваем диск:
-
+```bash
 root@user:/home/user# vgextend vg_home /dev/sdb
   Physical volume "/dev/sdb" successfully created.
   Volume group "vg_home" successfully extended
@@ -345,18 +352,19 @@ resize2fs 1.47.0 (5-Feb-2023)
 Filesystem at /dev/mapper/vg_home-LogVol_Home is mounted on /home; on-line resizing required
 old_desc_blocks = 1, new_desc_blocks = 1
 The filesystem on /dev/mapper/vg_home-LogVol_Home is now 785408 (4k) blocks long.
-
+```
 Снять снапшот:
-
+```bash
 root@user:/home/user# lvcreate -L 100MB -s -n home_snap \
  /dev/vg_home/LogVol_Home
   Logical volume "home_snap" created.
-
+```
 Удалить часть файлов:
-
+```bash
 root@user:/home/user# rm -f /home/file{11..20}
-
+```
 Проверяем:
+```bash
 root@user:/home/user# ll /home/
 total 28
 drwxr-xr-x  4 root root  4096 Apr 14 07:49 ./
@@ -373,9 +381,9 @@ drwxr-xr-x 23 root root  4096 Apr 10 05:51 ../
 -rw-r--r--  1 root root     0 Apr 14 06:56 file9
 drwx------  2 root root 16384 Apr 14 06:51 lost+found/
 drwxr-x---  5 user user  4096 Apr  1 18:32 user/
-
+```
 Процесс восстановления из снапшота:
-
+```bash
 root@user:/home/user# umount /home
 root@user:/home/user# lvconvert --merge /dev/vg_home/home_snap
   Merging of volume vg_home/home_snap started.
@@ -385,8 +393,9 @@ root@user:/home/user# mount /dev/mapper/vg_home-LogVol_Home /home
 mount: (hint) your fstab has been modified, but systemd still uses
        the old version; use 'systemctl daemon-reload' to reload.
 root@user:/home/user# systemctl daemon-reload
-
-[root@lvm ~]# ls -al /home
+```
+Проверяем
+```bash
 root@user:/home/user# ls -al /home
 total 28
 drwxr-xr-x  4 root root  4096 Apr 14 06:56 .
@@ -413,5 +422,5 @@ drwxr-xr-x 23 root root  4096 Apr 10 05:51 ..
 -rw-r--r--  1 root root     0 Apr 14 06:56 file9
 drwx------  2 root root 16384 Apr 14 06:51 lost+found
 drwxr-x---  5 user user  4096 Apr  1 18:32 user
-
+```
 Файлы успешно восстановлены с помощью снапшота.
