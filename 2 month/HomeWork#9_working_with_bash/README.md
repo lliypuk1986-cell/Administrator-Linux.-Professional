@@ -236,7 +236,7 @@ crontab -e
 ![alt text](image.png)
 
 <details> 
-<summary>скрипт log_report.sh</summary>
+<summary>ТЕЛО ПИСЬМА</summary>
 
 ```bash
 ========================================
