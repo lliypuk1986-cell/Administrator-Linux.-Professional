@@ -62,7 +62,7 @@ root@client:~# chmod +x log_report.sh
 # ========== НАСТРОЙКИ (ИЗМЕНИТЕ ПОД СЕБЯ) ==========
 LOG_FILE="/var/log/access.log"           # путь к вашему лог-файлу
 STATE_DIR="/var/log/logmonitor"          # папка для служебных файлов
-RECIPIENT="sawa-wv@yandex.ru"         # email получателя
+RECIPIENT="MAIL@yandex.ru"               # email получателя
 TOP_N=10                                 # сколько показывать в топах
 # ===================================================
 
