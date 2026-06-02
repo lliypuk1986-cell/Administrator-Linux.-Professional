@@ -19,8 +19,6 @@ root@client:/home/user# chmod +x ps_ax.sh
 ```
 <details> 
 <summary>скрипт ps_ax.sh</summary>
-```bash
-
 #!/bin/bash
 
 print_header() {                                                          # Функция печати заголовка
@@ -48,7 +46,6 @@ sudo ./ps_ax.sh
 
 <details> 
 <summary>вывод скрипта</summary>
-```bash
 root@client:/home/user# ./ps_ax.sh 
 PID      PPID     STATE COMMAND
 1        0        S     systemd
