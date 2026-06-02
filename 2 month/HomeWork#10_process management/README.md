@@ -19,6 +19,8 @@ root@client:/home/user# chmod +x ps_ax.sh
 ```
 <details> 
 <summary>скрипт ps_ax.sh</summary>
+
+```bash
 #!/bin/bash
 
 print_header() {                                                          # Функция печати заголовка
@@ -37,6 +39,7 @@ for pid_dir in /proc/[0-9]*; do                                           # Ци
     [[ -z "$name" ]] && name="-"                                          # Если имя пусто, ставим прочерк
     printf "%-8s %-8s %-5s %s\n" "$pid" "$ppid" "$state" "$name"          # Выводим строку процесса
 done | sort -n                                                            # Сортируем по PID
+```
 </details>
 
 Проверяем:
@@ -46,6 +49,8 @@ sudo ./ps_ax.sh
 
 <details> 
 <summary>вывод скрипта</summary>
+
+```bash
 root@client:/home/user# ./ps_ax.sh 
 PID      PPID     STATE COMMAND
 1        0        S     systemd
@@ -356,4 +361,6 @@ PID      PPID     STATE COMMAND
 23846    2328     S     ps_ax.sh
 23847    23846    S     ps_ax.sh
 23848    23846    S     sort
+```
+
 </details>
