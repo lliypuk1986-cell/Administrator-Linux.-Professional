@@ -584,8 +584,13 @@ vagrant@ubuntu-focal:~$ df -h | grep /mnt
 ```
 
 скриншот вывода df -h | grep /mnt 
+
 ![alt text](image-1.png)
+
 Скриншот вывода команды df -h с запущенной ВМ
+
 ![alt text](image-2.png)
+
 Скриншот с хостовой машины вывода команды netstat -tulpn | grep 8080 с запущенной ВМ
+
 ![alt text](image-3.png)
