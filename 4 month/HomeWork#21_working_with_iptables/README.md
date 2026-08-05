@@ -249,17 +249,25 @@ run-parts: executing /usr/share/netfilter-persistent/plugins.d/25-ip6tables save
 ![alt text](image-4.png)
 
 # 5. дефолт в инет оставить через inetRouter.
+
 Пункт 5 уже выполнен на предыдущих шагах.
-Если кратко: дефолт в инет остаётся через inetRouter означает, что все внутренние узлы должны отправлять трафик в интернет по цепочке сервер -> centralRouter -> inetRouter -> (NAT) -> внешний мир.
+
+Если кратко: дефолт в инет остаётся через inetRouter означает, что все внутренние узлы должны отправлять трафик в интернет по цепочке **сервер → centralRouter → inetRouter → (NAT) → внешний мир**.
 
 Исходя из ваших логов, так оно и есть:
-На centralServer default via 192.168.0.1 (уходит на centralRouter).
-На centralRouter default via 192.168.255.1 (уходит на inetRouter).
-На inetRouter2 default via 192.168.255.13 (уходит на centralRouter, а тот уже на inetRouter).
 
+- На **centralServer** default via `192.168.0.1` (уходит на centralRouter).  
+- На **centralRouter** default via `192.168.255.1` (уходит на inetRouter).  
+- На **inetRouter2** default via `192.168.255.13` (уходит на centralRouter, а тот уже на inetRouter).
+
+Выводы команд `ip route | grep default` (все в одном блоке):
+
+```bash
 root@icentralServer:/home/user# ip route | grep default
-default via 192.168.0.1 dev ens19 proto static 
+default via 192.168.0.1 dev ens19 proto static
+
 root@centralRouter:/home/user# ip route | grep default
 default via 192.168.255.1 dev ens19 proto static
+
 root@inetRouter2:/home/user# ip route | grep default
-default via 192.168.255.13 dev ens19 
+default via 192.168.255.13 dev ens19
