@@ -390,10 +390,12 @@ Connecting to host 10.10.10.1, port 5201
 iperf Done.
 ```
 
-Таблица замеров:
-Режим	Transfer	Bitrate (receiver)	Retr
-TAP	1.13 GBytes	242 Mbits/sec	427
-TUN	1.12 GBytes	241 Mbits/sec	350
+Таблица замеров
+
+| Режим | Transfer | Bitrate (receiver) | Retr |
+|-------|----------|--------------------|------|
+| TAP | 1.13 GBytes | 242 Mbits/sec | 427 |
+| TUN | 1.12 GBytes | 241 Mbits/sec | 350 |
 
 ## 2. RAS на базе OpenVPN
 
